@@ -384,42 +384,69 @@ int main(int argc, char **argv)
         newGrid[i] = (float *)malloc(N * sizeof(float));
     }
 
+    // Alocando os Vetores Temporários
+    float *tempUpperGrid = (float *)malloc(N * sizeof(float));
+    float *tempLowerGrid = (float *)malloc(N * sizeof(float));
+
     struct timeval start, end;
 
     // Gerando a Matriz da Geração Atual
     GenerateGrid(grid, local_rows, rank);
 
     //====================================/ Enviando as linhas de fronteira entre os processos /====================================/ 
+    /////////================NÃO ESTA FUNCIONANDO======================///////////////////
+    // // MPI_Request requests[4];
+    // // MPI_Status status[4];
+
+    // // if (rank > 0)
+    // // {
+    // //     MPI_Isend(grid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]); //Envia a linha de cima para o processo anterior
+    // //     MPI_Irecv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]); //Recebe a linha de baixo do processo anterior
+    // // }
+
+    // // if (rank < size - 1)
+    // // {
+    // //     MPI_Isend(grid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]); //Envia a linha de baixo para o próximo processo
+    // //     MPI_Irecv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]); //Recebe a linha de cima do próximo processo
+    // // }
+
+    // // MPI_Waitall(4, requests, status);
+
+    // /////////================ESTA FUNCIONANDO======================///////////////////
+    // if (rank  > 0) {
+    //     if(rank != size - 1) {
+    //         MPI_Send(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD); //Envia a linha de baixo para o próximo processo
+    //         MPI_Recv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de cima do próximo processo
+    //     } else {
+    //         if(rank == size - 1){
+    //           MPI_Sendrecv(grid[local_rows - 1], N, MPI_FLOAT, 0, 0, tempUpperGrid, N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de baixo para o primeiro processo e recebe a linha de cima do primeiro processo
+    //         } else{
+    //             MPI_Send(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD); //Envia a linha de cima para o processo anterior
+    //             MPI_Recv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de baixo do processo anterior
+    //         }
+    //     }    
+    // } else {
+    //      MPI_Sendrecv(grid[0], N, MPI_FLOAT, size - 1, 0, tempLowerGrid, N, MPI_FLOAT, size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de cima para o último processo e recebe a linha de baixo do último processo
+    // }
+
+    /////////================ESTA FUNCIONANDO======================///////////////////
+    if (rank  != 0) {
+        MPI_Send(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD); //Envia a linha de cima para o processo anterior
+        MPI_Recv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de baixo do processo anterior
+    } 
     
-    // MPI_Request requests[4];
-    // MPI_Status status[4];
-
-    // if (rank > 0)
-    // {
-    //     MPI_Isend(grid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]);
-    //     MPI_Irecv(grid[1], N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]);
-    // }
-
-    // if (rank < size - 1)
-    // {
-    //     MPI_Isend(grid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]);
-    //     MPI_Irecv(grid[local_rows], N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]);
-    // }
-
-    // Trocando as linhas de fronteira entre os processos
-    if (rank  != 0)
-    {
-        MPI_Send(newGrid[0], N, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD);
-        MPI_Recv(newGrid[0], N, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    if(rank != size - 1) {
+        MPI_Send(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD); //Envia a linha de baixo para o próximo processo
+        MPI_Recv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de cima do próximo processo
     }
-
-    if(rank != size - 1)
-    {
-        MPI_Send(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD);
-        MPI_Recv(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    }
-
-    // MPI_Waitall(4, requests, status);
+    // else{
+    //     if(rank == 0){
+    //         MPI_Sendrecv(grid[0], N, MPI_FLOAT, size - 1, 0, tempLowerGrid, N, MPI_FLOAT, size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de cima para o último processo e recebe a linha de baixo do último processo
+    //     }
+    //     else if(rank == size - 1){
+    //         MPI_Sendrecv(grid[local_rows - 1], N, MPI_FLOAT, 0, 0, tempUpperGrid, N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de baixo para o primeiro processo e recebe a linha de cima do primeiro processo
+    //     }
+    // }
 
     //====================================/ FIM /====================================/
 
@@ -428,31 +455,31 @@ int main(int argc, char **argv)
 
     //====================================/ Criando a Nova Geração /====================================/
 
-    for (int generation = 0; generation < GEN; generation++)
-    {
-        float sum = 0.0; // Variável para somar a quantidade de células vivas
+    // for (int generation = 0; generation < GEN; generation++)
+    // {
+    //     float sum = 0.0; // Variável para somar a quantidade de células vivas
 
-        CreateNextGen(grid, newGrid, &sum, local_rows, start_row, end_row, rank, size);
+    //     CreateNextGen(grid, newGrid, tempLowerGrid, tempUpperGrid, &sum, local_rows, start_row, end_row, rank, size);
 
-        // Atualizando a Matriz da Geração Atual com a Nova Geração
-        float **temp = grid;
-        grid = newGrid;
-        newGrid = temp;
+    //     // Atualizando a Matriz da Geração Atual com a Nova Geração
+    //     float **temp = grid;
+    //     grid = newGrid;
+    //     newGrid = temp;
 
-        float total_sum;
-        // Soma a quantidade de células vivas de cada processo
-        MPI_Reduce(&sum, &total_sum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+    //     float total_sum;
+    //     // Soma a quantidade de células vivas de cada processo
+    //     MPI_Reduce(&sum, &total_sum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-        if(rank == 0){
-            // Imprimindo a Matriz da Geração Atual   
-            if(generation <= 5){
-                printf("\n");
-                PrintGrid(grid, 10, rank);
-            }
+    //     if(rank == 0){
+    //         // Imprimindo a Matriz da Geração Atual   
+    //         if(generation <= 5){
+    //             printf("\n");
+    //             PrintGrid(grid, 10, rank);
+    //         }
 
-            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
-        }
-    }
+    //         printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
+    //     }
+    // }
 
     //====================================/ FIM /====================================/
 
