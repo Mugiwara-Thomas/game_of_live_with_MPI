@@ -6,7 +6,6 @@ INTEGRANTES:
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #include <sys/time.h>
 #include <mpi.h>
 
@@ -335,6 +334,9 @@ void CreateNextGen(float **grid, float **newGrid, float* sum, int local_rows, in
 
     // MPI_Waitall(4, requests, status);
 
+    // MPI_Sendrecv(newGrid[0], N, MPI_FLOAT, rank - 1, 0, newGrid[local_rows], N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    // MPI_Sendrecv(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, 0, newGrid[-1], N, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+
     //====================================/ FIM /====================================/mp
 }
 
@@ -387,9 +389,6 @@ int main(int argc, char **argv)
     // Gerando a Matriz da Geração Atual
     GenerateGrid(grid, local_rows, rank);
 
-    // Enviando a Matriz da Geração Atual para os outros processos
-    // MPI_Bcast(&grid[0][0], local_rows * N, MPI_FLOAT, 0, MPI_COMM_WORLD);
-
     //====================================/ Enviando as linhas de fronteira entre os processos /====================================/ 
     
     // MPI_Request requests[4];
@@ -431,7 +430,7 @@ int main(int argc, char **argv)
 
     for (int generation = 0; generation < GEN; generation++)
     {
-        float sum = 0; // Variável para somar a quantidade de células vivas
+        float sum = 0.0; // Variável para somar a quantidade de células vivas
 
         CreateNextGen(grid, newGrid, &sum, local_rows, start_row, end_row, rank, size);
 
@@ -444,15 +443,14 @@ int main(int argc, char **argv)
         // Soma a quantidade de células vivas de cada processo
         MPI_Reduce(&sum, &total_sum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-        // Imprimindo a Matriz da Geração Atual   
-        if(generation <= 5){
-            printf("\n");
-            PrintGrid(grid, 10, rank);
-        }
-
         if(rank == 0){
-            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
+            // Imprimindo a Matriz da Geração Atual   
+            if(generation <= 5){
+                printf("\n");
+                PrintGrid(grid, 10, rank);
+            }
 
+            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
         }
     }
 
