@@ -21,7 +21,7 @@ void PrintGrid(float **grid, int local_n, int rank)
 {
     for (int i = 0; i < local_n; i++)
     {
-        for (int j = 0; j < N; j++)
+        for (int j = 0; j < 50; j++)
         {
             printf("%.f|", grid[i][j]);
         }
@@ -62,6 +62,282 @@ void GenerateGrid(float **grid, int local_rows, int rank)
     }
 }
 
+// Função que retorna a quantidade de vizinhos vivos de cada célula
+int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
+{
+    int count = 0;
+
+    // Verificando se a célula está na borda superior
+    if (i == 0)
+    {
+        // Verificando se a célula está na borda superior esquerda
+        if (j == 0)
+        {
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][N - 1] > 0.0)
+                count++;
+            if (grid[i][N - 1] > 0.0)
+                count++;
+            if (grid[local_rows - 1][N - 1] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j + 1] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está na borda superior direita
+        else if (j == N - 1)
+        {
+            if (grid[i][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][0] > 0.0)
+                count++;
+            if (grid[i][0] > 0.0)
+                count++;
+            if (grid[local_rows - 1][0] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j - 1] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está na borda superior central
+        else
+        {
+            if (grid[i][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][j + 1] > 0.0)
+                count++;
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j + 1] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j] > 0.0)
+                count++;
+            if (grid[local_rows - 1][j - 1] > 0.0)
+                count++;
+        }
+    }
+    else if (i == local_rows - 1)
+    { // Verificando se a célula está na borda inferior
+        // Verificando se a célula está na borda inferior esquerda
+        if (j == 0)
+        {
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][j + 1] > 0.0)
+                count++;
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[0][j + 1] > 0.0)
+                count++;
+            if (grid[0][j] > 0.0)
+                count++;
+            if (grid[0][N - 1] > 0.0)
+                count++;
+            if (grid[i][N - 1] > 0.0)
+                count++;
+            if (grid[i - 1][N - 1] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está na borda inferior direita
+        else if (j == N - 1)
+        {
+            if (grid[i][j - 1] > 0.0)
+                count++;
+            if (grid[i - 1][j - 1] > 0.0)
+                count++;
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][0] > 0.0)
+                count++;
+            if (grid[i][0] > 0.0)
+                count++;
+            if (grid[0][0] > 0.0)
+                count++;
+            if (grid[0][j] > 0.0)
+                count++;
+            if (grid[0][j - 1] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está na borda inferior central
+        else
+        {
+            if (grid[i][j - 1] > 0.0)
+                count++;
+            if (grid[i - 1][j - 1] > 0.0)
+                count++;
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][j + 1] > 0.0)
+                count++;
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[0][j + 1] > 0.0)
+                count++;
+            if (grid[0][j] > 0.0)
+                count++;
+            if (grid[0][j - 1] > 0.0)
+                count++;
+        }
+    }
+    else
+    {
+        // Verificando se a célula está na borda esquerda
+        if (j == 0)
+        {
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][j + 1] > 0.0)
+                count++;
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][N - 1] > 0.0)
+                count++;
+            if (grid[i][N - 1] > 0.0)
+                count++;
+            if (grid[i - 1][N - 1] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está na borda direita
+        else if (j == N - 1)
+        {
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][j - 1] > 0.0)
+                count++;
+            if (grid[i][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j - 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][0] > 0.0)
+                count++;
+            if (grid[i][0] > 0.0)
+                count++;
+            if (grid[i - 1][0] > 0.0)
+                count++;
+        }
+        // Verificando se a célula está no centro da matriz
+        else
+        {
+            if (grid[i - 1][j - 1] > 0.0)
+                count++;
+            if (grid[i - 1][j] > 0.0)
+                count++;
+            if (grid[i - 1][j + 1] > 0.0)
+                count++;
+            if (grid[i][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j] > 0.0)
+                count++;
+            if (grid[i + 1][j + 1] > 0.0)
+                count++;
+            if (grid[i + 1][j - 1] > 0.0)
+                count++;
+            if (grid[i][j - 1] > 0.0)
+                count++;
+        }
+    }
+
+    return count;
+}
+
+// Função que cria a próxima geração
+void CreateNextGen(float **grid, float **newGrid, float* sum, int local_rows, int start_row, int end_row, int rank, int size)
+{
+    int count = 0;
+
+    // Pegando a quantidade de vizinhos vivos de cada célula na posição i,j
+    for (int i = 0; i < local_rows; i++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            count = getNeighbors(grid, i, j, local_rows, rank);
+
+            // Verificando se a célula está viva
+            if (grid[i][j] > 0.0)
+            {
+                // Verificando se a célula tem menos de 2 vizinhos vivos --> Morrem por abandono
+                if (count < 2)
+                {
+                    newGrid[i][j] = 0.0;
+                }
+                // Verificando se a célula tem 2 ou 3 vizinhos vivos --> Continua Viva
+                else if (count == 2 || count == 3)
+                {
+                    newGrid[i][j] = grid[i][j];
+                }
+                // Verificando se a célula tem mais de 3 vizinhos vivos --> Morre por superpopulação
+                else if (count >= 3)
+                {
+                    newGrid[i][j] = 0.0;
+                }
+            }
+            else
+            {
+                // Verificando se a célula tem exatamente 3 vizinhos vivos --> Se torna Viva
+                if (count == 3)
+                {
+                    float value = count / 8.0;
+                    if(value > 1.0)
+                        value = 1.0;
+                    newGrid[i][j] = value;
+                }
+                else
+                {
+                    newGrid[i][j] = 0.0;
+                }
+            }
+
+            // Somando a quantidade de células vivas
+            if (newGrid[i][j] > 0.0)
+            {
+                *sum += 1.0;  
+            }  
+        }
+    }
+
+    //====================================/ Enviando as linhas de fronteira entre os processos /====================================/
+
+    // MPI_Request requests[4];
+    // MPI_Status status[4];
+
+    // if (rank > 0)
+    // {
+    //     MPI_Isend(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]);
+    //     MPI_Irecv(newGrid[1], N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]);
+    // }
+
+    // if (rank < size - 1)
+    // {
+    //     MPI_Isend(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]);
+    //     MPI_Irecv(newGrid[local_rows], N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]);
+    // }
+
+    // MPI_Waitall(4, requests, status);
+
+    //====================================/ FIM /====================================/mp
+}
+
 // Função que libera a memória alocada para a Matriz
 void FreeGrid(float **grid, int local_rows)
 {
@@ -72,7 +348,7 @@ void FreeGrid(float **grid, int local_rows)
     free(grid);
 } 
 
-int main(int argc, char **argv[])
+int main(int argc, char **argv)
 {
     int rank, size;
 
@@ -83,6 +359,11 @@ int main(int argc, char **argv[])
 
     //Determina o número de linhas que cada processo vai receber
     int local_rows = N / size;
+    int rest = N % size;
+
+    // Se o número de linhas não for divisível pelo número de processos, o processo 0 recebe as linhas restantes
+    if (rank == 0)
+        local_rows += rest;
 
     int start_row = rank * local_rows; // Linha inicial do processo
     int end_row = start_row + local_rows; // Linha final do processo
@@ -111,6 +392,21 @@ int main(int argc, char **argv[])
 
     //====================================/ Enviando as linhas de fronteira entre os processos /====================================/ 
     
+    // MPI_Request requests[4];
+    // MPI_Status status[4];
+
+    // if (rank > 0)
+    // {
+    //     MPI_Isend(grid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]);
+    //     MPI_Irecv(grid[1], N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]);
+    // }
+
+    // if (rank < size - 1)
+    // {
+    //     MPI_Isend(grid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]);
+    //     MPI_Irecv(grid[local_rows], N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]);
+    // }
+
     // Trocando as linhas de fronteira entre os processos
     if (rank  != 0)
     {
@@ -124,6 +420,8 @@ int main(int argc, char **argv[])
         MPI_Recv(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     }
 
+    // MPI_Waitall(4, requests, status);
+
     //====================================/ FIM /====================================/
 
     // Iniciando o cronômetro
@@ -135,7 +433,7 @@ int main(int argc, char **argv[])
     {
         float sum = 0; // Variável para somar a quantidade de células vivas
 
-        CreateNextGen(grid, newGrid, local_rows, start_row, end_row, rank, size, &sum);
+        CreateNextGen(grid, newGrid, &sum, local_rows, start_row, end_row, rank, size);
 
         // Atualizando a Matriz da Geração Atual com a Nova Geração
         float **temp = grid;
@@ -149,7 +447,7 @@ int main(int argc, char **argv[])
         // Imprimindo a Matriz da Geração Atual   
         if(generation <= 5){
             printf("\n");
-            PrintGrid(grid, local_rows, rank);
+            PrintGrid(grid, 10, rank);
         }
 
         if(rank == 0){
