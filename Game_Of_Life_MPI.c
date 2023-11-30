@@ -62,7 +62,7 @@ void GenerateGrid(float **grid, int local_rows, int rank)
 }
 
 // Função que retorna a quantidade de vizinhos vivos de cada célula
-int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
+int getNeighbors(float **grid, float *tempLowerGrid, float *tempUpperGrid, int i, int j, int local_rows, int rank)
 {
     int count = 0;
 
@@ -82,11 +82,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][N - 1] > 0.0)
                 count++;
-            if (grid[local_rows - 1][N - 1] > 0.0)
+            if (tempLowerGrid[N - 1] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j] > 0.0)
+            if (tempLowerGrid[j] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j + 1] > 0.0)
+            if (tempLowerGrid[j + 1] > 0.0)
                 count++;
         }
         // Verificando se a célula está na borda superior direita
@@ -102,11 +102,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][0] > 0.0)
                 count++;
-            if (grid[local_rows - 1][0] > 0.0)
+            if (tempLowerGrid[0] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j] > 0.0)
+            if (tempLowerGrid[j] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j - 1] > 0.0)
+            if (tempLowerGrid[j - 1] > 0.0)
                 count++;
         }
         // Verificando se a célula está na borda superior central
@@ -122,11 +122,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][j + 1] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j + 1] > 0.0)
+            if (tempLowerGrid[j + 1] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j] > 0.0)
+            if (tempLowerGrid[j] > 0.0)
                 count++;
-            if (grid[local_rows - 1][j - 1] > 0.0)
+            if (tempLowerGrid[j - 1] > 0.0)
                 count++;
         }
     }
@@ -141,11 +141,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][j + 1] > 0.0)
                 count++;
-            if (grid[0][j + 1] > 0.0)
+            if (tempUpperGrid[j + 1] > 0.0)
                 count++;
-            if (grid[0][j] > 0.0)
+            if (tempUpperGrid[j] > 0.0)
                 count++;
-            if (grid[0][N - 1] > 0.0)
+            if (tempUpperGrid[N - 1] > 0.0)
                 count++;
             if (grid[i][N - 1] > 0.0)
                 count++;
@@ -165,11 +165,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][0] > 0.0)
                 count++;
-            if (grid[0][0] > 0.0)
+            if (tempUpperGrid[0] > 0.0)
                 count++;
-            if (grid[0][j] > 0.0)
+            if (tempUpperGrid[j] > 0.0)
                 count++;
-            if (grid[0][j - 1] > 0.0)
+            if (tempUpperGrid[j - 1] > 0.0)
                 count++;
         }
         // Verificando se a célula está na borda inferior central
@@ -185,11 +185,11 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
                 count++;
             if (grid[i][j + 1] > 0.0)
                 count++;
-            if (grid[0][j + 1] > 0.0)
+            if (tempUpperGrid[j + 1] > 0.0)
                 count++;
-            if (grid[0][j] > 0.0)
+            if (tempUpperGrid[j] > 0.0)
                 count++;
-            if (grid[0][j - 1] > 0.0)
+            if (tempUpperGrid[j - 1] > 0.0)
                 count++;
         }
     }
@@ -261,7 +261,7 @@ int getNeighbors(float **grid, int i, int j, int local_rows, int rank)
 }
 
 // Função que cria a próxima geração
-void CreateNextGen(float **grid, float **newGrid, float* sum, int local_rows, int start_row, int end_row, int rank, int size)
+void CreateNextGen(float **grid, float **newGrid, float *tempLowerGrid, float *tempUpperGrid, float* sum, int local_rows, int rank, int size)
 {
     int count = 0;
 
@@ -270,7 +270,7 @@ void CreateNextGen(float **grid, float **newGrid, float* sum, int local_rows, in
     {
         for (int j = 0; j < N; j++)
         {
-            count = getNeighbors(grid, i, j, local_rows, rank);
+            count = getNeighbors(grid, tempLowerGrid, tempUpperGrid, i, j, local_rows, rank);
 
             // Verificando se a célula está viva
             if (grid[i][j] > 0.0)
@@ -367,8 +367,10 @@ int main(int argc, char **argv)
     if (rank == 0)
         local_rows += rest;
 
-    int start_row = rank * local_rows; // Linha inicial do processo
-    int end_row = start_row + local_rows; // Linha final do processo
+    /* (NÃO É NECESSÁRIO NESTA VERSÃO)
+        int start_row = rank * local_rows; // Linha inicial do processo
+        int end_row = start_row + local_rows; // Linha final do processo
+    */
 
     // Alocando a Matirz da Geração Atual - Grid
     float **grid = (float **)malloc(local_rows * sizeof(float *));
@@ -393,60 +395,23 @@ int main(int argc, char **argv)
     // Gerando a Matriz da Geração Atual
     GenerateGrid(grid, local_rows, rank);
 
-    //====================================/ Enviando as linhas de fronteira entre os processos /====================================/ 
-    /////////================NÃO ESTA FUNCIONANDO======================///////////////////
-    // // MPI_Request requests[4];
-    // // MPI_Status status[4];
+    //====================================/ ENVIANDO AS LINHAS DE FRONTEIRAS ENTRE OS PROCESSOS /====================================/ 
 
-    // // if (rank > 0)
-    // // {
-    // //     MPI_Isend(grid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]); //Envia a linha de cima para o processo anterior
-    // //     MPI_Irecv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]); //Recebe a linha de baixo do processo anterior
-    // // }
+    MPI_Request requests[4];
+    MPI_Status status[4];
 
-    // // if (rank < size - 1)
-    // // {
-    // //     MPI_Isend(grid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]); //Envia a linha de baixo para o próximo processo
-    // //     MPI_Irecv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]); //Recebe a linha de cima do próximo processo
-    // // }
+    int next = (rank + 1) % size;
+    int prev = (rank + size - 1) % size;
 
-    // // MPI_Waitall(4, requests, status);
-
-    // /////////================ESTA FUNCIONANDO======================///////////////////
-    // if (rank  > 0) {
-    //     if(rank != size - 1) {
-    //         MPI_Send(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD); //Envia a linha de baixo para o próximo processo
-    //         MPI_Recv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de cima do próximo processo
-    //     } else {
-    //         if(rank == size - 1){
-    //           MPI_Sendrecv(grid[local_rows - 1], N, MPI_FLOAT, 0, 0, tempUpperGrid, N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de baixo para o primeiro processo e recebe a linha de cima do primeiro processo
-    //         } else{
-    //             MPI_Send(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD); //Envia a linha de cima para o processo anterior
-    //             MPI_Recv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de baixo do processo anterior
-    //         }
-    //     }    
-    // } else {
-    //      MPI_Sendrecv(grid[0], N, MPI_FLOAT, size - 1, 0, tempLowerGrid, N, MPI_FLOAT, size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de cima para o último processo e recebe a linha de baixo do último processo
-    // }
-
-    /////////================ESTA FUNCIONANDO======================///////////////////
-    if (rank  != 0) {
-        MPI_Send(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD); //Envia a linha de cima para o processo anterior
-        MPI_Recv(tempLowerGrid, N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de baixo do processo anterior
-    } 
+    MPI_Isend(grid[0], N, MPI_FLOAT, prev, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]);       //Envia a linha de cima para o processo anterior
+    MPI_Irecv(tempLowerGrid, N, MPI_FLOAT, prev, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]);         //Recebe a linha de baixo do processo anterior
     
-    if(rank != size - 1) {
-        MPI_Send(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD); //Envia a linha de baixo para o próximo processo
-        MPI_Recv(tempUpperGrid, N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Recebe a linha de cima do próximo processo
-    }
-    // else{
-    //     if(rank == 0){
-    //         MPI_Sendrecv(grid[0], N, MPI_FLOAT, size - 1, 0, tempLowerGrid, N, MPI_FLOAT, size - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de cima para o último processo e recebe a linha de baixo do último processo
-    //     }
-    //     else if(rank == size - 1){
-    //         MPI_Sendrecv(grid[local_rows - 1], N, MPI_FLOAT, 0, 0, tempUpperGrid, N, MPI_FLOAT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE); //Envia a linha de baixo para o primeiro processo e recebe a linha de cima do primeiro processo
-    //     }
-    // }
+    MPI_Isend(grid[local_rows - 1], N, MPI_FLOAT, next, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]); //Envia a linha de baixo para o próximo processo
+    MPI_Irecv(tempUpperGrid, N, MPI_FLOAT, next, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]);     //Recebe a linha de cima do próximo processo
+
+    MPI_Waitall(4, requests, status);
+
+    // MPI_Barrier(MPI_COMM_WORLD);
 
     //====================================/ FIM /====================================/
 
