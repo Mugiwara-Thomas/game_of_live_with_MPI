@@ -315,29 +315,15 @@ void CreateNextGen(float **grid, float **newGrid, float *tempLowerGrid, float *t
         }
     }
 
-    //====================================/ Enviando as linhas de fronteira entre os processos /====================================/
+    //====================================/ ENVIANDO AS LINHAS DE FRONTEIRAS ENTRE OS PROCESSOS /====================================/
 
-    // MPI_Request requests[4];
-    // MPI_Status status[4];
+    int next = (rank + 1) % size;
+    int prev = (rank + size - 1) % size;
 
-    // if (rank > 0)
-    // {
-    //     MPI_Isend(newGrid[0], N, MPI_FLOAT, rank - 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[0]);
-    //     MPI_Irecv(newGrid[1], N, MPI_FLOAT, rank - 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[1]);
-    // }
+    MPI_Sendrecv(newGrid[0], N, MPI_FLOAT, prev, TAG_SEND_UPPER, tempUpperGrid, N, MPI_FLOAT, next, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    MPI_Sendrecv(newGrid[local_rows - 1], N, MPI_FLOAT, next, TAG_SEND_LOWER, tempLowerGrid, N, MPI_FLOAT, prev, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    // if (rank < size - 1)
-    // {
-    //     MPI_Isend(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, TAG_SEND_LOWER, MPI_COMM_WORLD, &requests[2]);
-    //     MPI_Irecv(newGrid[local_rows], N, MPI_FLOAT, rank + 1, TAG_SEND_UPPER, MPI_COMM_WORLD, &requests[3]);
-    // }
-
-    // MPI_Waitall(4, requests, status);
-
-    // MPI_Sendrecv(newGrid[0], N, MPI_FLOAT, rank - 1, 0, newGrid[local_rows], N, MPI_FLOAT, rank + 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    // MPI_Sendrecv(newGrid[local_rows - 1], N, MPI_FLOAT, rank + 1, 0, newGrid[-1], N, MPI_FLOAT, rank - 1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-    //====================================/ FIM /====================================/mp
+    //====================================/ FIM /====================================/
 }
 
 // Função que libera a memória alocada para a Matriz
@@ -366,11 +352,6 @@ int main(int argc, char **argv)
     // Se o número de linhas não for divisível pelo número de processos, o processo 0 recebe as linhas restantes
     if (rank == 0)
         local_rows += rest;
-
-    /* (NÃO É NECESSÁRIO NESTA VERSÃO)
-        int start_row = rank * local_rows; // Linha inicial do processo
-        int end_row = start_row + local_rows; // Linha final do processo
-    */
 
     // Alocando a Matirz da Geração Atual - Grid
     float **grid = (float **)malloc(local_rows * sizeof(float *));
@@ -418,33 +399,34 @@ int main(int argc, char **argv)
     // Iniciando o cronômetro
     gettimeofday(&start, NULL);
 
-    //====================================/ Criando a Nova Geração /====================================/
+    //====================================/ CRIANDO AS NOVAS GERAÇÕES /====================================/
 
-    // for (int generation = 0; generation < GEN; generation++)
-    // {
-    //     float sum = 0.0; // Variável para somar a quantidade de células vivas
+    for (int generation = 0; generation < GEN; generation++)
+    {
+        float sum = 0.0; // Variável para somar a quantidade de células vivas
 
-    //     CreateNextGen(grid, newGrid, tempLowerGrid, tempUpperGrid, &sum, local_rows, start_row, end_row, rank, size);
+        CreateNextGen(grid, newGrid, tempLowerGrid, tempUpperGrid, &sum, local_rows, rank, size);
 
-    //     // Atualizando a Matriz da Geração Atual com a Nova Geração
-    //     float **temp = grid;
-    //     grid = newGrid;
-    //     newGrid = temp;
+        // Atualizando a Matriz da Geração Atual com a Nova Geração
+        float **temp = grid;
+        grid = newGrid;
+        newGrid = temp;
 
-    //     float total_sum;
-    //     // Soma a quantidade de células vivas de cada processo
-    //     MPI_Reduce(&sum, &total_sum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
+        float total_sum;
+        // Soma a quantidade de células vivas de cada processo
+        MPI_Reduce(&sum, &total_sum, 1, MPI_FLOAT, MPI_SUM, 0, MPI_COMM_WORLD);
 
-    //     if(rank == 0){
-    //         // Imprimindo a Matriz da Geração Atual   
-    //         if(generation <= 5){
-    //             printf("\n");
-    //             PrintGrid(grid, 10, rank);
-    //         }
+        if(rank == 0){
+            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
+            
+            // Imprimindo a Matriz da Geração Atual   
+            if(generation <= 5){
+                printf("\n");
+                PrintGrid(grid, 50, rank);
+            }
 
-    //         printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
-    //     }
-    // }
+        }
+    }
 
     //====================================/ FIM /====================================/
 
@@ -460,6 +442,9 @@ int main(int argc, char **argv)
     // Liberando a memória alocada para as Matrizes
     FreeGrid(grid, local_rows);
     FreeGrid(newGrid, local_rows);
+
+    free(tempUpperGrid);
+    free(tempLowerGrid);
 
     MPI_Finalize();
 

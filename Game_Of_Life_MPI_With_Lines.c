@@ -334,7 +334,7 @@ void CreateNextGen(float **grid, float **newGrid, float *tempLowerGrid, float *t
     MPI_Sendrecv(newGrid[start_row], N, MPI_FLOAT, prev, TAG_SEND_UPPER, tempUpperGrid, N, MPI_FLOAT, next, TAG_SEND_UPPER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
     MPI_Sendrecv(newGrid[end_row - 1], N, MPI_FLOAT, next, TAG_SEND_LOWER, tempLowerGrid, N, MPI_FLOAT, prev, TAG_SEND_LOWER, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-    //====================================/ FIM /====================================/mp
+    //====================================/ FIM /====================================/
 }
 
 // Função que libera a memória alocada para a Matriz
@@ -432,12 +432,13 @@ int main(int argc, char **argv)
 
         if(rank == 0){
             // Imprimindo a Matriz da Geração Atual   
+            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
+            
             if(generation <= 5){
                 printf("\n");
                 PrintGrid(grid, start_row, end_row, rank);
             }
 
-            printf("Geração %d: %.0f células vivas\n", generation + 1, total_sum);
         }
     }
 
